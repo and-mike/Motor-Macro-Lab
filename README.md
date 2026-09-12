@@ -14,7 +14,7 @@ This project now includes a lightweight translator that converts high-level macr
 - chords, arpeggiators/arpeggios
 - sequences and phrases
 - effect events (reverb/chorus/delay)
-- preset generative tasks (currently deterministic chord progression generation)
+- preset generative tasks (currently seed-based reproducible chord progression generation)
 
 ## Usage
 

@@ -63,11 +63,15 @@ class MidiMacroEvolutionLab:
         context: dict[str, Any],
         tick: int,
     ) -> tuple[list[dict[str, Any]], int]:
+        sequence_origin = tick
         cursor = tick
         compiled: list[dict[str, Any]] = []
 
         for action in actions:
-            action_tick = int(action.get("tick", cursor + int(action.get("offset", 0))))
+            if "tick" in action:
+                action_tick = sequence_origin + int(action["tick"])
+            else:
+                action_tick = cursor + int(action.get("offset", 0))
             action_events, consumed = self._compile_action(action, macros, context, action_tick)
             compiled.extend(action_events)
             cursor = max(cursor, action_tick + consumed)
@@ -139,7 +143,7 @@ class MidiMacroEvolutionLab:
         pattern = action.get("pattern", "up")
         repeats = max(1, int(action.get("repeats", 1)))
         step_ticks = max(1, int(action.get("step_ticks", self.ppq // 8)))
-        gate_ticks = max(1, int(action.get("gate_ticks", step_ticks)))
+        gate_ticks = max(1, int(action.get("gate_ticks", max(1, step_ticks - 1))))
         velocity = int(action.get("velocity", 96))
         channel = int(action.get("channel", 0))
 
@@ -318,6 +322,8 @@ class MidiMacroEvolutionLab:
         length = max(1, int(action.get("length", 4)))
         root = int(action.get("root", 60))
         bar_ticks = max(1, int(action.get("bar_ticks", self.ppq)))
+        velocity = int(action.get("velocity", 90))
+        channel = int(action.get("channel", 0))
 
         if task_name != "chord_progression":
             return ([{"tick": tick, "type": "meta", "name": "unknown_generative_task", "task": task_name}], 0)
@@ -333,7 +339,10 @@ class MidiMacroEvolutionLab:
             offset = rnd.choice(chord_offsets)
             shape = rnd.choice([major_intervals, minor_intervals])
             notes = [root + offset + interval for interval in shape]
-            chord_events, _ = self._compile_chord({"notes": notes, "duration": bar_ticks, "velocity": 90}, cursor)
+            chord_events, _ = self._compile_chord(
+                {"notes": notes, "duration": bar_ticks, "velocity": velocity, "channel": channel},
+                cursor,
+            )
             events.extend(chord_events)
             cursor += bar_ticks
 

@@ -78,7 +78,15 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
                 "events": [
                     {"type": "arpeggiator", "notes": [60, 64, 67], "pattern": "updown", "repeats": 1, "step_ticks": 30},
                     {"type": "effect_event", "effect": "chorus", "value": 99},
-                    {"type": "preset_generative_task", "task": "chord_progression", "seed": 3, "length": 2, "root": 57},
+                    {
+                        "type": "preset_generative_task",
+                        "task": "chord_progression",
+                        "seed": 3,
+                        "length": 2,
+                        "root": 57,
+                        "velocity": 77,
+                        "channel": 2,
+                    },
                 ]
             }
         )
@@ -90,11 +98,13 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
             for event in result["timeline"]
             if event["type"] == "note_off" and event["tick"] <= 120
         ]
-        self.assertIn(30, arp_note_off_ticks)
+        self.assertIn(29, arp_note_off_ticks)
 
         chorus_events = [event for event in result["timeline"] if event.get("parameter") == "chorus"]
         self.assertEqual(chorus_events[0]["cc"], 93)
         self.assertEqual(chorus_events[0]["value"], 99)
+        generated_note_ons = [event for event in note_ons if event["tick"] >= 120]
+        self.assertTrue(all(event["velocity"] == 77 and event["channel"] == 2 for event in generated_note_ons))
 
     def test_simultaneous_note_order_is_note_off_before_note_on(self) -> None:
         result = self.lab.translate(
@@ -108,6 +118,30 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
 
         at_tick_30 = [event for event in result["timeline"] if event["tick"] == 30]
         self.assertEqual([event["type"] for event in at_tick_30[:2]], ["note_off", "note_on"])
+
+    def test_sequence_absolute_ticks_are_relative_to_sequence_origin(self) -> None:
+        result = self.lab.translate(
+            {
+                "events": [
+                    {"type": "keypress", "note": 48, "duration": 50},
+                    {
+                        "type": "sequence",
+                        "events": [
+                            {"type": "knob_assignment", "tick": 20, "parameter": "filter_cutoff", "value": 90},
+                            {"type": "keypress", "note": 64, "duration": 10},
+                        ],
+                    },
+                ]
+            }
+        )
+        cutoff_event = next(event for event in result["timeline"] if event.get("parameter") == "filter_cutoff")
+        sequence_note_on = next(
+            event
+            for event in result["timeline"]
+            if event["type"] == "note_on" and event["note"] == 64
+        )
+        self.assertEqual(cutoff_event["tick"], 70)
+        self.assertEqual(sequence_note_on["tick"], 70)
 
 
 if __name__ == "__main__":
