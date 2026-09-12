@@ -74,23 +74,29 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
 
         note_ons = [event for event in result["timeline"] if event["type"] == "note_on"]
         self.assertGreaterEqual(len(note_ons), 5)
+        arp_note_off_ticks = [
+            event["tick"]
+            for event in result["timeline"]
+            if event["type"] == "note_off" and event["tick"] <= 120
+        ]
+        self.assertIn(30, arp_note_off_ticks)
 
         chorus_events = [event for event in result["timeline"] if event.get("parameter") == "chorus"]
         self.assertEqual(chorus_events[0]["cc"], 93)
         self.assertEqual(chorus_events[0]["value"], 99)
 
-    def test_simultaneous_note_order_is_note_on_before_note_off(self) -> None:
+    def test_simultaneous_note_order_is_note_off_before_note_on(self) -> None:
         result = self.lab.translate(
             {
                 "events": [
                     {"type": "keypress", "note": 60, "duration": 30},
-                    {"type": "keypress", "note": 62, "duration": 30},
+                    {"type": "keypress", "note": 60, "duration": 30},
                 ]
             }
         )
 
         at_tick_30 = [event for event in result["timeline"] if event["tick"] == 30]
-        self.assertEqual([event["type"] for event in at_tick_30[:2]], ["note_on", "note_off"])
+        self.assertEqual([event["type"] for event in at_tick_30[:2]], ["note_off", "note_on"])
 
 
 if __name__ == "__main__":

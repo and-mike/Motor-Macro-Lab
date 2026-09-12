@@ -43,9 +43,9 @@ class MidiMacroEvolutionLab:
         )
 
         event_order = {
-            "note_on": 10,
+            "note_off": 10,
             "control_change": 20,
-            "note_off": 30,
+            "note_on": 30,
             "meta": 40,
         }
         timeline = sorted(events, key=lambda event: (event["tick"], event_order.get(event["type"], 50)))
@@ -139,7 +139,7 @@ class MidiMacroEvolutionLab:
         pattern = action.get("pattern", "up")
         repeats = max(1, int(action.get("repeats", 1)))
         step_ticks = max(1, int(action.get("step_ticks", self.ppq // 8)))
-        gate_ticks = max(1, int(action.get("gate_ticks", max(1, step_ticks - 10))))
+        gate_ticks = max(1, int(action.get("gate_ticks", step_ticks)))
         velocity = int(action.get("velocity", 96))
         channel = int(action.get("channel", 0))
 
