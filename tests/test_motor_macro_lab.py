@@ -187,6 +187,27 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
             self.assertIn("timeline", translated)
             self.assertEqual(translated["timeline"][0]["type"], "note_on")
 
+    def test_cli_writes_translated_json_to_stdout_without_output_flag(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        cli_path = repo_root / "motor_macro_lab.py"
+        spec = {"events": [{"type": "keypress", "note": 72, "duration": 10}]}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_path = Path(temp_dir) / "input.json"
+            input_path.write_text(json.dumps(spec), encoding="utf-8")
+
+            completed = subprocess.run(
+                [sys.executable, str(cli_path), "--input", str(input_path)],
+                check=True,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+            )
+
+            translated = json.loads(completed.stdout)
+            self.assertIn("timeline", translated)
+            self.assertEqual(translated["timeline"][0]["note"], 72)
+
 
 if __name__ == "__main__":
     unittest.main()
