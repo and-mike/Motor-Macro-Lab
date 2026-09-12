@@ -61,6 +61,17 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         self.assertIn(72, played_notes)
         self.assertNotIn(55, played_notes)
 
+    def test_automation_ticks_use_integer_interpolation(self) -> None:
+        result = self.lab.translate(
+            {
+                "events": [
+                    {"type": "automation", "parameter": "filter_cutoff", "start": 0, "end": 100, "steps": 4, "duration": 5}
+                ]
+            }
+        )
+        ticks = [event["tick"] for event in result["timeline"] if event["type"] == "control_change"]
+        self.assertEqual(ticks, [0, 1, 2, 3, 5])
+
     def test_arpeggio_effect_and_generative_task(self) -> None:
         result = self.lab.translate(
             {
