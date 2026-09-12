@@ -1,4 +1,9 @@
+import json
+import subprocess
+import sys
+import tempfile
 import unittest
+from pathlib import Path
 
 from motor_macro_lab import MidiMacroEvolutionLab
 
@@ -29,6 +34,7 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         attack_events = [event for event in result["timeline"] if event.get("parameter") == "envelope_attack"]
         self.assertEqual(len(attack_events), 3)
         self.assertEqual([event["value"] for event in attack_events], [10, 15, 20])
+        self.assertEqual(next(event for event in result["timeline"] if event["type"] == "note_on")["channel"], 0)
 
     def test_loop_bank_macro_and_conditional(self) -> None:
         spec = {
@@ -71,6 +77,17 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         )
         ticks = [event["tick"] for event in result["timeline"] if event["type"] == "control_change"]
         self.assertEqual(ticks, [0, 1, 2, 3, 5])
+
+    def test_automation_steps_greater_than_duration_are_clamped(self) -> None:
+        result = self.lab.translate(
+            {
+                "events": [
+                    {"type": "automation", "parameter": "filter_cutoff", "start": 0, "end": 127, "steps": 8, "duration": 3}
+                ]
+            }
+        )
+        ticks = [event["tick"] for event in result["timeline"] if event["type"] == "control_change"]
+        self.assertEqual(ticks, [0, 1, 2, 3])
 
     def test_arpeggio_effect_and_generative_task(self) -> None:
         result = self.lab.translate(
@@ -119,6 +136,13 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         at_tick_30 = [event for event in result["timeline"] if event["tick"] == 30]
         self.assertEqual([event["type"] for event in at_tick_30[:2]], ["note_off", "note_on"])
 
+    def test_keypress_supports_explicit_nonzero_channel(self) -> None:
+        result = self.lab.translate({"events": [{"type": "keypress", "note": 65, "duration": 40, "channel": 4}]})
+        on_event = next(event for event in result["timeline"] if event["type"] == "note_on")
+        off_event = next(event for event in result["timeline"] if event["type"] == "note_off")
+        self.assertEqual(on_event["channel"], 4)
+        self.assertEqual(off_event["channel"], 4)
+
     def test_sequence_absolute_ticks_are_relative_to_sequence_origin(self) -> None:
         result = self.lab.translate(
             {
@@ -142,6 +166,26 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         )
         self.assertEqual(cutoff_event["tick"], 70)
         self.assertEqual(sequence_note_on["tick"], 70)
+
+    def test_cli_writes_translated_output_file(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        cli_path = repo_root / "motor_macro_lab.py"
+        spec = {"events": [{"type": "keypress", "note": 60, "duration": 10}]}
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_path = Path(temp_dir) / "input.json"
+            output_path = Path(temp_dir) / "output.json"
+            input_path.write_text(json.dumps(spec), encoding="utf-8")
+
+            subprocess.run(
+                [sys.executable, str(cli_path), "--input", str(input_path), "--output", str(output_path)],
+                check=True,
+                cwd=repo_root,
+            )
+
+            translated = json.loads(output_path.read_text(encoding="utf-8"))
+            self.assertIn("timeline", translated)
+            self.assertEqual(translated["timeline"][0]["type"], "note_on")
 
 
 if __name__ == "__main__":

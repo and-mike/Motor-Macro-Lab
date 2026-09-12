@@ -203,12 +203,13 @@ class MidiMacroEvolutionLab:
         steps = max(1, int(action.get("steps", 8)))
         duration = max(1, int(action.get("duration", self.ppq)))
         channel = int(action.get("channel", 0))
+        intervals = min(steps, duration)
         events = []
 
-        for index in range(steps + 1):
-            fraction = index / steps
+        for index in range(intervals + 1):
+            fraction = index / intervals
             value = int(round(start + (end - start) * fraction))
-            tick_offset = (duration * index) // steps
+            tick_offset = (duration * index) // intervals
             events.append(
                 {
                     "tick": tick + tick_offset,
