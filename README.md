@@ -19,18 +19,17 @@ This project now includes a lightweight translator that converts high-level macr
 ## Usage
 
 ```bash
-python /home/runner/work/Motor-Macro-Lab/Motor-Macro-Lab/motor_macro_lab.py --input /path/to/spec.json
+python motor_macro_lab.py --input /path/to/spec.json
 ```
 
 Optional output file:
 
 ```bash
-python /home/runner/work/Motor-Macro-Lab/Motor-Macro-Lab/motor_macro_lab.py --input /path/to/spec.json --output /path/to/result.json
+python motor_macro_lab.py --input /path/to/spec.json --output /path/to/result.json
 ```
 
 ## Testing
 
 ```bash
-cd /home/runner/work/Motor-Macro-Lab/Motor-Macro-Lab
 python -m unittest discover -s tests
 ```

@@ -42,7 +42,13 @@ class MidiMacroEvolutionLab:
             tick=0,
         )
 
-        timeline = sorted(events, key=lambda event: (event["tick"], event["type"]))
+        event_order = {
+            "note_on": 10,
+            "control_change": 20,
+            "note_off": 30,
+            "meta": 40,
+        }
+        timeline = sorted(events, key=lambda event: (event["tick"], event_order.get(event["type"], 50)))
         return {
             "ppq": int(spec.get("ppq", self.ppq)),
             "tempo": int(spec.get("tempo", 120)),

@@ -79,6 +79,19 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         self.assertEqual(chorus_events[0]["cc"], 93)
         self.assertEqual(chorus_events[0]["value"], 99)
 
+    def test_simultaneous_note_order_is_note_on_before_note_off(self) -> None:
+        result = self.lab.translate(
+            {
+                "events": [
+                    {"type": "keypress", "note": 60, "duration": 30},
+                    {"type": "keypress", "note": 62, "duration": 30},
+                ]
+            }
+        )
+
+        at_tick_30 = [event for event in result["timeline"] if event["tick"] == 30]
+        self.assertEqual([event["type"] for event in at_tick_30[:2]], ["note_on", "note_off"])
+
 
 if __name__ == "__main__":
     unittest.main()
