@@ -325,9 +325,13 @@ class MidiMacroEvolutionLab:
         bar_ticks = max(1, int(action.get("bar_ticks", self.ppq)))
         velocity = int(action.get("velocity", 90))
         channel = int(action.get("channel", 0))
+        total_span = length * bar_ticks
 
         if task_name != "chord_progression":
-            return ([{"tick": tick, "type": "meta", "name": "unknown_generative_task", "task": task_name}], 0)
+            return (
+                [{"tick": tick, "type": "meta", "name": "unknown_generative_task", "task": task_name}],
+                total_span,
+            )
 
         rnd = random.Random(seed)
         major_intervals = [0, 4, 7]
@@ -347,7 +351,7 @@ class MidiMacroEvolutionLab:
             events.extend(chord_events)
             cursor += bar_ticks
 
-        return events, cursor - tick
+        return events, total_span
 
 
 def main() -> None:

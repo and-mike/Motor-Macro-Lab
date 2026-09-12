@@ -123,6 +123,18 @@ class MidiMacroEvolutionLabTests(unittest.TestCase):
         generated_note_ons = [event for event in note_ons if event["tick"] >= 120]
         self.assertTrue(all(event["velocity"] == 77 and event["channel"] == 2 for event in generated_note_ons))
 
+    def test_unknown_generative_task_preserves_timeline_span(self) -> None:
+        result = self.lab.translate(
+            {
+                "events": [
+                    {"type": "generative_task", "task": "unknown", "length": 2, "bar_ticks": 50},
+                    {"type": "keypress", "note": 66, "duration": 10},
+                ]
+            }
+        )
+        note_on = next(event for event in result["timeline"] if event["type"] == "note_on")
+        self.assertEqual(note_on["tick"], 100)
+
     def test_simultaneous_note_order_is_note_off_before_note_on(self) -> None:
         result = self.lab.translate(
             {

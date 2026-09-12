@@ -28,6 +28,15 @@ Optional output file:
 python motor_macro_lab.py --input /path/to/spec.json --output /path/to/result.json
 ```
 
+Python API:
+
+```python
+from motor_macro_lab import MidiMacroEvolutionLab
+
+spec = {"events": [{"type": "keypress", "note": 60, "duration": 120}]}
+timeline = MidiMacroEvolutionLab().translate(spec)
+```
+
 ## Testing
 
 ```bash
